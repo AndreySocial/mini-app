@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>💰 Money Clicker</title>
+
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ========== RESET & BASE ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:   #FFD700;
+      --gold2:  #FFA500;
+      --green:  #00E676;
+      --dark:   #0A0A0F;
+      --card:   #13131E;
+      --border: #2a2a3a;
+      --text:   #F0F0FF;
+      --muted:  #7777AA;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'Nunito', sans-serif;
+      overflow: hidden;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ========== PARTICLES ========== */
+    #particles {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      opacity: 0;
+      animation: floatUp 1.2s ease-out forwards;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-120px) scale(0.3); }
+    }
+
+    /* ========== LAYOUT ========== */
+    #app {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      height: 100vh; padding: 20px 16px 24px;
+      gap: 16px;
+    }
+
+    /* ========== HEADER ========== */
+    .header { width: 100%; text-align: center; }
+
+    .title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.4rem;
+      letter-spacing: 3px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* ========== BALANCE CARD ========== */
+    .balance-card {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 24px;
+      display: flex; align-items: center; gap: 14px;
+      position: relative; overflow: hidden;
+    }
+    .balance-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold2), var(--gold));
+    }
+    .balance-icon { font-size: 2.2rem; flex-shrink: 0; }
+    .balance-info { flex: 1; }
+    .balance-label {
+      font-size: 0.7rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1.5px;
+    }
+    .balance-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem; letter-spacing: 1px;
+      color: var(--gold);
+      transition: transform 0.1s;
+    }
+    .balance-value.pop { transform: scale(1.15); }
+
+    /* ========== STATS ROW ========== */
+    .stats {
+      width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      text-align: center;
+    }
+    .stat-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem; color: var(--green);
+    }
+    .stat-lbl {
+      font-size: 0.65rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    /* ========== CLICKER AREA ========== */
+    .clicker-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      width: 100%;
+    }
+
+    #coin-btn {
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      border: none; outline: none; cursor: pointer;
+      background: radial-gradient(circle at 35% 35%, #FFE566, #CC8800);
+      box-shadow:
+        0 0 0 8px #1a1a2a,
+        0 0 0 10px #FFD700,
+        0 20px 60px rgba(255,215,0,0.35),
+        inset 0 4px 12px rgba(255,255,255,0.3);
+      position: relative;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 6px;
+    }
+
+    #coin-btn:active {
+      transform: scale(0.92);
+      box-shadow:
+        0 0 0 8px #1a1a2a,
+        0 0 0 10px #FFD700,
+        0 8px 30px rgba(255,215,0,0.2),
+        inset 0 4px 12px rgba(255,255,255,0.3);
+    }
+
+    .coin-symbol {
+      font-size: 4rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+      pointer-events: none;
+    }
+    .coin-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem; letter-spacing: 2px;
+      color: #7a4000;
+      pointer-events: none;
+    }
+
+    /* ========== FLOATING +$ ========== */
+    .float-text {
+      position: fixed;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      color: var(--gold);
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      pointer-events: none;
+      z-index: 100;
+      animation: floatText 1s ease-out forwards;
+    }
+    @keyframes floatText {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
+    }
+
+    /* ========== UPGRADES ========== */
+    .upgrades-title {
+      width: 100%; font-size: 0.7rem; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 2px;
+      text-align: center;
+    }
+    .upgrades { width: 100%; display: flex; gap: 10px; }
+    .upg-btn {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+      color: var(--text);
+    }
+    .upg-btn:hover:not(:disabled) { border-color: var(--gold); background: #1e1e30; }
+    .upg-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .upg-btn .upg-icon { font-size: 1.4rem; }
+    .upg-btn .upg-name { font-size: 0.68rem; font-weight: 700; color: var(--muted); margin-top: 2px; }
+    .upg-btn .upg-cost { font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem; color: var(--gold); }
+    .upg-btn .upg-eff  { font-size: 0.62rem; color: var(--green); }
+
+    /* ========== LEVEL BAR ========== */
+    .level-wrap { width: 100%; }
+    .level-row { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; }
+    .level-bar { width: 100%; height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .level-fill { height: 100%; background: linear-gradient(90deg, var(--gold2), var(--gold)); border-radius: 99px; transition: width 0.4s ease; }
+  </style>
+</head>
+<body>
+<div id="particles"></div>
+
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="title">Money Clicker</div>
+    <div class="subtitle">Tap to get rich 💸</div>
+  </div>
+
+  <!-- BALANCE -->
+  <div class="balance-card">
+    <div class="balance-icon">💵</div>
+    <div class="balance-info">
+      <div class="balance-label">Твой баланс</div>
+      <div class="balance-value" id="balance-display">0 $</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat-box">
+      <div class="stat-val" id="per-click-display">+1 $</div>
+      <div class="stat-lbl">За клик</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="total-clicks-display">0</div>
+      <div class="stat-lbl">Кликов всего</div>
+    </div>
+  </div>
+
+  <!-- COIN BUTTON -->
+  <div class="clicker-wrap">
+    <button id="coin-btn" onclick="handleClick(event)">
+      <span class="coin-symbol">💰</span>
+      <span class="coin-label">CLICK</span>
+    </button>
+  </div>
+
+  <!-- LEVEL -->
+  <div class="level-wrap">
+    <div class="level-row">
+      <span id="level-label">Уровень 1</span>
+      <span id="level-progress">0 / 100</span>
+    </div>
+    <div class="level-bar">
+      <div class="level-fill" id="level-fill" style="width: 0%"></div>
+    </div>
+  </div>
+
+  <!-- UPGRADES -->
+  <div class="upgrades-title">🛒 Улучшения</div>
+  <div class="upgrades" id="upgrades-container"></div>
+</div>
+
+<script>
+  // ========== TELEGRAM INIT ==========
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    tg.setHeaderColor('#0A0A0F');
+    tg.setBackgroundColor('#0A0A0F');
+  }
+
+  // ========== STATE ==========
+  const SAVE_KEY = 'money_clicker_v1';
+
+  const defaultState = {
+    balance: 0,
+    perClick: 1,
+    totalClicks: 0,
+    level: 1,
+    levelXP: 0,
+    upgrades: { golden: 0, diamond: 0, rocket: 0 }
+  };
+
+  let state = loadState();
+
+  const UPGRADES = [
+    {
+      id: 'golden',
+      icon: '🪙',
+      name: 'Золото',
+      baseCost: 50,
+      effect: 2,
+      label: '+2 $/клик'
+    },
+    {
+      id: 'diamond',
+      icon: '💎',
+      name: 'Бриллиант',
+      baseCost: 200,
+      effect: 10,
+      label: '+10 $/клик'
+    },
+    {
+      id: 'rocket',
+      icon: '🚀',
+      name: 'Ракета',
+      baseCost: 1000,
+      effect: 50,
+      label: '+50 $/клик'
+    }
+  ];
+
+  // ========== LOAD / SAVE ==========
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) return { ...defaultState, ...JSON.parse(raw) };
+    } catch(e) {}
+    return { ...defaultState };
+  }
+
+  function saveState() {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  }
+
+  // ========== HELPERS ==========
+  function fmt(n) {
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+    if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+    return n.toLocaleString('ru-RU');
+  }
+
+  function upgradeCost(upg) {
+    const lvl = state.upgrades[upg.id] || 0;
+    return Math.floor(upg.baseCost * Math.pow(1.8, lvl));
+  }
+
+  function xpForLevel(lvl) { return Math.floor(100 * Math.pow(1.5, lvl - 1)); }
+
+  // ========== RENDER ==========
+  function render() {
+    document.getElementById('balance-display').textContent = fmt(state.balance) + ' $';
+    document.getElementById('per-click-display').textContent = '+' + fmt(state.perClick) + ' $';
+    document.getElementById('total-clicks-display').textContent = fmt(state.totalClicks);
+
+    const needed = xpForLevel(state.level);
+    const pct = Math.min(100, (state.levelXP / needed) * 100);
+    document.getElementById('level-label').textContent = 'Уровень ' + state.level;
+    document.getElementById('level-progress').textContent = fmt(state.levelXP) + ' / ' + fmt(needed);
+    document.getElementById('level-fill').style.width = pct + '%';
+
+    const container = document.getElementById('upgrades-container');
+    container.innerHTML = '';
+    UPGRADES.forEach(upg => {
+      const cost = upgradeCost(upg);
+      const lvl  = state.upgrades[upg.id] || 0;
+      const btn  = document.createElement('button');
+      btn.className = 'upg-btn';
+      btn.disabled  = state.balance < cost;
+      btn.innerHTML = `
+        <div class="upg-icon">${upg.icon}</div>
+        <div class="upg-name">${upg.name} (${lvl})</div>
+        <div class="upg-cost">${fmt(cost)} $</div>
+        <div class="upg-eff">${upg.label}</div>
+      `;
+      btn.onclick = () => buyUpgrade(upg);
+      container.appendChild(btn);
+    });
+  }
+
+  // ========== CLICK ==========
+  function handleClick(e) {
+    // Earn money
+    state.balance     += state.perClick;
+    state.totalClicks += 1;
+    state.levelXP     += 1;
+
+    // Level up
+    const needed = xpForLevel(state.level);
+    if (state.levelXP >= needed) {
+      state.levelXP -= needed;
+      state.level   += 1;
+      state.perClick += Math.floor(state.level * 0.5);
+      showFloat(e, '⬆️ УРОВЕНЬ ' + state.level + '!', '#00E676');
+    }
+
+    // Floating text
+    showFloat(e, '+' + fmt(state.perClick) + ' $', null);
+
+    // Particles
+    spawnParticles(e);
+
+    // Balance pop
+    const el = document.getElementById('balance-display');
+    el.classList.remove('pop');
+    void el.offsetWidth;
+    el.classList.add('pop');
+    setTimeout(() => el.classList.remove('pop'), 150);
+
+    saveState();
+    render();
+  }
+
+  // ========== BUY UPGRADE ==========
+  function buyUpgrade(upg) {
+    const cost = upgradeCost(upg);
+    if (state.balance < cost) return;
+    state.balance          -= cost;
+    state.upgrades[upg.id] = (state.upgrades[upg.id] || 0) + 1;
+    state.perClick         += upg.effect;
+    if (tg) tg.HapticFeedback?.notificationOccurred('success');
+    saveState();
+    render();
+  }
+
+  // ========== FLOAT TEXT ==========
+  function showFloat(e, text, color) {
+    const el = document.createElement('div');
+    el.className   = 'float-text';
+    el.textContent = text;
+    el.style.color = color || 'var(--gold)';
+    const x = (e.clientX ?? e.touches?.[0]?.clientX ?? window.innerWidth / 2) - 30;
+    const y = (e.clientY ?? e.touches?.[0]?.clientY ?? window.innerHeight / 2) - 20;
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1100);
+  }
+
+  // ========== PARTICLES ==========
+  function spawnParticles(e) {
+    const cx = e.clientX ?? e.touches?.[0]?.clientX ?? window.innerWidth / 2;
+    const cy = e.clientY ?? e.touches?.[0]?.clientY ?? window.innerHeight / 2;
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 8; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = (cx + (Math.random() - 0.5) * 60) + 'px';
+      p.style.top  = cy + 'px';
+      p.style.background = Math.random() > 0.5 ? '#FFD700' : '#FFA500';
+      p.style.animationDelay = (Math.random() * 0.2) + 's';
+      container.appendChild(p);
+      setTimeout(() => p.remove(), 1400);
+    }
+  }
+
+  // ========== HAPTICS ==========
+  document.getElementById('coin-btn').addEventListener('touchstart', () => {
+    tg?.HapticFeedback?.impactOccurred('medium');
+  }, { passive: true });
+
+  // ========== BOOT ==========
+  render();
+</script>
+</body>
+</html>
